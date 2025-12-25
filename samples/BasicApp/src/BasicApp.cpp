@@ -7,6 +7,7 @@ using namespace ci::app;
 
 typedef std::pair<vec2, vec2> line;
 
+
 // We'll create a new Cinder Application by deriving from the App class.
 class BasicApp : public App {
   public:
@@ -23,8 +24,9 @@ class BasicApp : public App {
 
   private:
 	// This will maintain a list of points which we will draw line segments between
-	std::vector<vec2> mPoints;
-	//std::vector<line> mLines;
+	//std::vector<vec2> mPoints;
+	std::vector<line> mLines;
+	line currentLine;
 };
 
 void prepareSettings( BasicApp::Settings* settings )
@@ -35,8 +37,16 @@ void prepareSettings( BasicApp::Settings* settings )
 void BasicApp::mouseDown( MouseEvent event )
 {
 	// Store the current mouse position in the list.
-	mPoints.push_back( event.getPos() );
-	
+	//mPoints.push_back( event.getPos() );
+	if( length(currentLine.first) == 0) {
+		currentLine.first = event.getPos();
+	}
+	else {
+		currentLine.second = event.getPos();
+		mLines.push_back( currentLine );
+		currentLine.first = vec2( 0, 0 );
+		currentLine.second = vec2( 0, 0 );
+	}
 }
 
 void BasicApp::keyDown( KeyEvent event )
@@ -47,7 +57,8 @@ void BasicApp::keyDown( KeyEvent event )
 	}
 	else if( event.getCode() == KeyEvent::KEY_SPACE ) {
 		// Clear the list of points when the user presses the space bar.
-		mPoints.clear();
+		//mPoints.clear();
+		mLines.clear();
 	}
 	else if( event.getCode() == KeyEvent::KEY_ESCAPE ) {
 		// Exit full screen, or quit the application, when the user presses the ESC key.
@@ -73,9 +84,9 @@ void BasicApp::draw()
 	// using a few convenience functions: 'begin' will tell OpenGL to
 	// start constructing a line strip, 'vertex' will add a point to the
 	// line strip and 'end' will execute the draw calls on the GPU.
-	gl::begin( GL_LINE_STRIP );
-	std::for_each( mPoints.begin(), mPoints.end(), static_cast<void (*)( const vec2& )>( gl::vertex ) );
-	gl::end();
+	//gl::begin( GL_LINE_STRIP );
+	std::for_each( mLines.begin(), mLines.end(), []( const line& l ){  gl::drawLine( l.first, l.second ); } );
+	//gl::end();
 }
 
 // This line tells Cinder to actually create and run the application.
