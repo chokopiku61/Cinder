@@ -5,12 +5,14 @@
 using namespace ci;
 using namespace ci::app;
 
+typedef std::pair<vec2, vec2> line;
+
 // We'll create a new Cinder Application by deriving from the App class.
 class BasicApp : public App {
   public:
 	// Cinder will call 'mouseDrag' when the user moves the mouse while holding one of its buttons.
 	// See also: mouseMove, mouseDown, mouseUp and mouseWheel.
-	void mouseDrag( MouseEvent event ) override;
+	void mouseDown( MouseEvent event ) override;
 
 	// Cinder will call 'keyDown' when the user presses a key on the keyboard.
 	// See also: keyUp.
@@ -22,6 +24,7 @@ class BasicApp : public App {
   private:
 	// This will maintain a list of points which we will draw line segments between
 	std::vector<vec2> mPoints;
+	//std::vector<line> mLines;
 };
 
 void prepareSettings( BasicApp::Settings* settings )
@@ -29,10 +32,11 @@ void prepareSettings( BasicApp::Settings* settings )
 	settings->setMultiTouchEnabled( false );
 }
 
-void BasicApp::mouseDrag( MouseEvent event )
+void BasicApp::mouseDown( MouseEvent event )
 {
 	// Store the current mouse position in the list.
 	mPoints.push_back( event.getPos() );
+	
 }
 
 void BasicApp::keyDown( KeyEvent event )
@@ -58,7 +62,7 @@ void BasicApp::draw()
 {
 	// Clear the contents of the window. This call will clear
 	// both the color and depth buffers. 
-	gl::clear( Color::gray( 0.1f ) );
+	gl::clear( Color::gray( 1.0f ) );
 
 	// Set the current draw color to orange by setting values for
 	// red, green and blue directly. Values range from 0 to 1.
@@ -70,9 +74,7 @@ void BasicApp::draw()
 	// start constructing a line strip, 'vertex' will add a point to the
 	// line strip and 'end' will execute the draw calls on the GPU.
 	gl::begin( GL_LINE_STRIP );
-	for( const vec2 &point : mPoints ) {
-		gl::vertex( point );
-	}
+	std::for_each( mPoints.begin(), mPoints.end(), static_cast<void (*)( const vec2& )>( gl::vertex ) );
 	gl::end();
 }
 
