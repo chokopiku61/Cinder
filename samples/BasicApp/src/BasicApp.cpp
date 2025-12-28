@@ -5,7 +5,7 @@
 using namespace ci;
 using namespace ci::app;
 
-typedef std::pair<vec2, vec2> line;
+// typedef std::pair<vec2, vec2> line;
 
 
 // We'll create a new Cinder Application by deriving from the App class.
@@ -13,8 +13,8 @@ class BasicApp : public App {
   public:
 	// Cinder will call 'mouseDrag' when the user moves the mouse while holding one of its buttons.
 	// See also: mouseMove, mouseDown, mouseUp and mouseWheel.
-	void mouseDown( MouseEvent event ) override;
-
+	void mouseUp( MouseEvent event ) override;
+	void mouseDrag( MouseEvent event ) override;
 	// Cinder will call 'keyDown' when the user presses a key on the keyboard.
 	// See also: keyUp.
 	void keyDown( KeyEvent event ) override;
@@ -25,8 +25,10 @@ class BasicApp : public App {
   private:
 	// This will maintain a list of points which we will draw line segments between
 	//std::vector<vec2> mPoints;
-	std::vector<line> mLines;
-	line currentLine;
+	//std::vector<line> mLines;
+	//line currentLine;
+	std::vector<std::vector<vec2>> mCurves;
+	std::vector<vec2> mCurrentCurve;
 };
 
 void prepareSettings( BasicApp::Settings* settings )
@@ -34,19 +36,14 @@ void prepareSettings( BasicApp::Settings* settings )
 	settings->setMultiTouchEnabled( false );
 }
 
-void BasicApp::mouseDown( MouseEvent event )
+void BasicApp::mouseUp( MouseEvent event )
 {
-	// Store the current mouse position in the list.
-	//mPoints.push_back( event.getPos() );
-	if( length(currentLine.first) == 0) {
-		currentLine.first = event.getPos();
-	}
-	else {
-		currentLine.second = event.getPos();
-		mLines.push_back( currentLine );
-		currentLine.first = vec2( 0, 0 );
-		currentLine.second = vec2( 0, 0 );
-	}
+	mCurves.push_back( mCurrentCurve );
+	mCurrentCurve.clear();
+}
+void BasicApp::mouseDrag( MouseEvent event )
+{
+	mCurrentCurve.push_back(event.getPos());
 }
 
 void BasicApp::keyDown( KeyEvent event )
@@ -58,7 +55,8 @@ void BasicApp::keyDown( KeyEvent event )
 	else if( event.getCode() == KeyEvent::KEY_SPACE ) {
 		// Clear the list of points when the user presses the space bar.
 		//mPoints.clear();
-		mLines.clear();
+		//mLines.clear();
+		mCurves.clear();
 	}
 	else if( event.getCode() == KeyEvent::KEY_ESCAPE ) {
 		// Exit full screen, or quit the application, when the user presses the ESC key.
@@ -66,6 +64,13 @@ void BasicApp::keyDown( KeyEvent event )
 			setFullScreen( false );
 		else
 			quit();
+	}
+}
+
+void drawCurve( const std::vector<vec2>& curve )
+{
+	for( const vec2& point : curve ) {
+		gl::vertex( point );
 	}
 }
 
@@ -85,9 +90,10 @@ void BasicApp::draw()
 	// start constructing a line strip, 'vertex' will add a point to the
 	// line strip and 'end' will execute the draw calls on the GPU.
 	//gl::begin( GL_LINE_STRIP );
-	std::for_each( mLines.begin(), mLines.end(), []( const line& l ){  gl::drawLine( l.first, l.second ); } );
-	//gl::end();
+	std::for_each( mCurves.begin(), mCurves.end(), []( const std::vector<vec2>& c ) { drawCurve(c); } );
+	gl::end();
 }
 
-// This line tells Cinder to actually create and run the application.
+
+	// This line tells Cinder to actually create and run the application.
 CINDER_APP( BasicApp, RendererGl, prepareSettings )
