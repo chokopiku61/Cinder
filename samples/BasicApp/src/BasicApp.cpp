@@ -92,6 +92,7 @@ void drawCurve( const std::pair<std::vector<vec2>, Color> curve )
 	for( int i = 0; i < curve.first.size() - 1; ++i ) {
 		gl::drawLine( curve.first[i], curve.first[i + 1] );
 	}
+	// Изменил обычный цикл на этот, так как при быстром рисвании появляются большие пробелы между точками, а это простой способ интерполяции :)
 }
 
 void BasicApp::draw()
@@ -101,6 +102,8 @@ void BasicApp::draw()
 	float pX = paletteX;
 	float pY = paletteY;
 
+	gl::color( Color::gray(0.4) );
+	gl::drawSolidRect( Rectf( pX-5, pY-5, pX + size + 5, pY + (size + 10)*colors.size() ) );
 	for( const auto& color : colors ) {
 		gl::color( color );
 		gl::drawSolidRect( Rectf( pX, pY, pX + size, pY + size ) );
