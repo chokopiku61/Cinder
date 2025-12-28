@@ -11,25 +11,33 @@ using namespace ci::app;
 // We'll create a new Cinder Application by deriving from the App class.
 class BasicApp : public App {
   public:
-	// Cinder will call 'mouseDrag' when the user moves the mouse while holding one of its buttons.
-	// See also: mouseMove, mouseDown, mouseUp and mouseWheel.
 	void mouseUp( MouseEvent event ) override;
 	void mouseDrag( MouseEvent event ) override;
+	void mouseDown( MouseEvent event ) override;
 	// Cinder will call 'keyDown' when the user presses a key on the keyboard.
 	// See also: keyUp.
 	void keyDown( KeyEvent event ) override;
 
 	// Cinder will call 'draw' each time the contents of the window need to be redrawn.
 	void draw() override;
-
+	
   private:
-	// This will maintain a list of points which we will draw line segments between
-	//std::vector<vec2> mPoints;
-	//std::vector<line> mLines;
-	//line currentLine;
-	std::vector<std::vector<vec2>> mCurves;
+	bool paletteClick( const vec2& pos );
+	Color mCurrentColor = Color::gray(0);
+	std::vector<std::pair<std::vector<vec2>, Color>> mCurves; //Пришлось добавить цвет, иначе цвет изменяется еще и устарых кривых
 	std::vector<vec2> mCurrentCurve;
+	const std::vector<Color> colors = { Color( 1.0f, 0.0f, 0.0f ), 
+		Color( 1.0f, 1.0f, 0.0f ), 
+		Color( 0.0f, 1.0f, 0.0f ), 
+		Color( 0.0f, 0.0f, 1.0f ), 
+	    Color( 1.0f, 0.0f, 1.0f ), 
+		Color( 0.0f, 1.0f, 1.0f ) };
+	std::vector<std::pair<vec2, vec2>> paletteRects; // Вектор точек верхней левой и правой нижней границы прямоугольников палитры
+	const float paletteX = 15.0f;
+	const float paletteY = 15.0f;
+	const float size = 42.0f;
 };
+
 
 void prepareSettings( BasicApp::Settings* settings )
 {
@@ -38,12 +46,19 @@ void prepareSettings( BasicApp::Settings* settings )
 
 void BasicApp::mouseUp( MouseEvent event )
 {
-	mCurves.push_back( mCurrentCurve );
-	mCurrentCurve.clear();
+	if( ! mCurrentCurve.empty() ) {
+		mCurves.emplace_back( mCurrentCurve, mCurrentColor ); //Сохраняем   линию и цвет
+		mCurrentCurve.clear();
+	}
 }
 void BasicApp::mouseDrag( MouseEvent event )
 {
 	mCurrentCurve.push_back(event.getPos());
+}
+
+void BasicApp::mouseDown( MouseEvent event )
+{
+	paletteClick( event.getPos() );
 }
 
 void BasicApp::keyDown( KeyEvent event )
@@ -67,33 +82,49 @@ void BasicApp::keyDown( KeyEvent event )
 	}
 }
 
-void drawCurve( const std::vector<vec2>& curve )
+void drawCurve( const std::pair<std::vector<vec2>, Color> curve )
 {
-	for( const vec2& point : curve ) {
+	gl::color( curve.second );
+	/*for( const vec2& point : curve.first ) {
 		gl::vertex( point );
+	}*/
+
+	for( int i = 0; i < curve.first.size() - 1; ++i ) {
+		gl::drawLine( curve.first[i], curve.first[i + 1] );
 	}
 }
 
 void BasicApp::draw()
 {
-	// Clear the contents of the window. This call will clear
-	// both the color and depth buffers. 
 	gl::clear( Color::gray( 1.0f ) );
+	
+	float pX = paletteX;
+	float pY = paletteY;
 
-	// Set the current draw color to orange by setting values for
-	// red, green and blue directly. Values range from 0 to 1.
-	// See also: gl::ScopedColor
-	gl::color( 1.0f, 0.5f, 0.25f );
+	for( const auto& color : colors ) {
+		gl::color( color );
+		gl::drawSolidRect( Rectf( pX, pY, pX + size, pY + size ) );
+		paletteRects.push_back( { { pX, pY }, { pX + size, pY + size } } );
+		pY += size + 10; // Отступ 
+	}
+	
+	gl::color( mCurrentColor );
 
-	// We're going to draw a line through all the points in the list
-	// using a few convenience functions: 'begin' will tell OpenGL to
-	// start constructing a line strip, 'vertex' will add a point to the
-	// line strip and 'end' will execute the draw calls on the GPU.
-	//gl::begin( GL_LINE_STRIP );
-	std::for_each( mCurves.begin(), mCurves.end(), []( const std::vector<vec2>& c ) { drawCurve(c); } );
+	std::for_each( mCurves.begin(), mCurves.end(), []( const auto& c ) { drawCurve(c); } );
 	gl::end();
 }
 
+bool BasicApp::paletteClick( const vec2& pos )
+{
+	for( int i = 0; i < colors.size(); ++i ) {
+		std::pair<vec2, vec2> cur = paletteRects[i];
+		if( ( pos.y >= cur.first.y ) && ( pos.y <= cur.second.y ) && ( pos.x >= cur.first.x ) && ( pos.x <= cur.second.x ) ) {
+			mCurrentColor = colors[i];
+			return true;
+		}
+	}
+	return false;
+}
 
 	// This line tells Cinder to actually create and run the application.
 CINDER_APP( BasicApp, RendererGl, prepareSettings )
